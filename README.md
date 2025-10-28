@@ -47,4 +47,8 @@ You’ll see live graphs of temperature and humidity!
 - Home temperature monitoring  
 - Greenhouse climate control  
 - IoT-based weather station  
-- Smart agriculture  
+- Smart agriculture
+
+## Support
+If you find this project useful, give it a ⭐ Star on GitHub!
+It helps more learners discover practical embedded simulations

@@ -18,7 +18,7 @@ void setup()
   Serial.begin(9600);
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  WiFi.begin(ssid, passphrase);
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
@@ -56,3 +56,4 @@ void loop()
     lastTime = millis();
   }
 }
+

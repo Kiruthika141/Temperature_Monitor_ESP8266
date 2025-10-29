@@ -1,61 +1,58 @@
 #include <ESP8266WiFi.h>
+#include <WiFiClient.h>
 #include <DHT.h>
+#include <ThingSpeak.h>
 const char* ssid = "YOUR WIFINAME";//EDIT 
 const char* password = "YOUR WIFI PASSWORD";//EDIT
-const char* server = "api.thingspeak.com";
-String apiKey = "THINGSPEAK API KEY"; //EDIT
-#define DHTPIN D1     
-#define DHTTYPE DHT11  
-DHT dht(DHTPIN, DHTTYPE);
+WiFiServer server(80);
 WiFiClient client;
-void setup() 
+unsigned long myChannelNumber = 1;//EDIT
+const char * myWriteAPIKey = "YOUR THINGSPEAK API KEY"; //EDIT
+unsigned long lastTime = 0;
+unsigned long timerDelay = 1000;
+#define DHTPIN D5 
+#define DHTTYPE DHT11 
+DHT dht(DHTPIN, DHTTYPE);
+void setup()
 {
   Serial.begin(9600);
-  dht.begin();
-  Serial.println();
-  Serial.println("Connecting to Wi-Fi...");
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) 
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, passphrase);
+  while (WiFi.status() != WL_CONNECTED)
   {
-    delay(1000);
+    delay(500);
     Serial.print(".");
   }
   Serial.println("");
-  Serial.println("Wi-Fi connected");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+  dht.begin();
+  ThingSpeak.begin(client); 
 }
-void loop() 
+void loop()
 {
-  float temperature = dht.readTemperature();
-  float humidity = dht.readHumidity();
-  if (isnan(temperature) || isnan(humidity)) 
+  if ((millis() - lastTime) > timerDelay)
   {
-    Serial.println("Failed to read from DHT sensor!");
-    delay(2000);
-    return;
+    delay(2500);
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+    float f = dht.readTemperature(true);
+    if (isnan(h) || isnan(t) || isnan(f)) 
+    {
+      Serial.println(F("Failed to read from DHT sensor!"));
+      return;
+    }
+    Serial.print("Temperature (ºC): ");
+    Serial.print(t);
+    Serial.println("ºC");
+    Serial.print("Humidity");
+    Serial.println(h);
+    ThingSpeak.setField(1, t);
+    ThingSpeak.setField(2, h);
+    ThingSpeak.writeFields(myChannelNumber,myWriteAPIKey);
+    lastTime = millis();
   }
-  Serial.print("Temperature: ");
-  Serial.print(temperature);
-  Serial.println(" *C");
-  Serial.print("Humidity: ");
-  Serial.print(humidity);
-  Serial.println("%");
-  if (client.connect(server, 80)) 
-  {
-    String postStr = "api_key=" + apiKey;
-    postStr += "&field1=";
-    postStr += String(temperature);
-    postStr += "&field2=";
-    postStr += String(humidity);
-    client.println("POST /update HTTP/1.1");
-    client.println("Host: api.thingspeak.com");
-    client.println("Connection: close");
-    client.println("Content-Type: application/x-www-form-urlencoded");
-    client.print("Content-Length: ");
-    client.println(postStr.length());
-    client.println();
-    client.print(postStr);
-    Serial.println("Data sent to ThingSpeak");
-  }
-  client.stop();
-  delay(500);
 }
